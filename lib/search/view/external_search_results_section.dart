@@ -17,6 +17,7 @@ import 'package:otzaria/plugins/services/plugin_in_book_search_service.dart';
 import 'package:otzaria/plugins/services/plugin_search_dialog_registry.dart';
 import 'package:otzaria/search/bloc/search_bloc.dart';
 import 'package:otzaria/search/bloc/search_state.dart';
+import 'package:otzaria/search/book_facet.dart';
 import 'package:otzaria/search/models/external_search_status.dart';
 import 'package:otzaria/search/models/external_search_summary.dart';
 import 'package:otzaria/search/models/search_match_policy.dart';
@@ -96,7 +97,7 @@ SearchMatchPolicy externalMatchPolicyOf(
 );
 
 /// אימות נתיב קטגוריה שהספק צירף לרשומת אינדקס מול עץ הספרייה: נתיב קיים
-/// מתקבל כמות שהוא; אחרת נופלים לקטגוריית-העל שלו אם היא קיימת; אחרת null
+/// מתקבל כ-facet שלו; אחרת נופלים לקטגוריית-העל שלו אם היא קיימת; אחרת null
 /// (הספר יוצג בדלי "עוד מ<מקור>").
 @visibleForTesting
 String? externalValidatedCategoryOf(
@@ -104,8 +105,10 @@ String? externalValidatedCategoryOf(
   Set<String> validPaths,
 ) {
   if (suggested == null) return null;
-  if (validPaths.contains(suggested)) return suggested;
-  final segments = suggested.split('/').where((s) => s.isNotEmpty);
+  // עץ הספרייה של התוסף שומר פסיק בשם תיקייה; [validPaths] הם facets.
+  final path = BookFacet.resolveFacetCategoryPath(categoryPath: suggested);
+  if (validPaths.contains(path)) return path;
+  final segments = path.split('/').where((s) => s.isNotEmpty);
   if (segments.isEmpty) return null;
   final top = '/${segments.first}';
   return validPaths.contains(top) ? top : null;
@@ -342,6 +345,7 @@ class _ExternalSearchResultsSectionState
   ) {
     if (active == null) return;
     _recomputeVisibleIds();
+    _syncFilteredOutPreview();
     _fetchGeneration++;
     _visibleConsumed = 0;
     final visible = _visibleIds;
@@ -359,6 +363,21 @@ class _ExternalSearchResultsSectionState
     if (visible == null || visible.isNotEmpty) {
       unawaited(_fetch(state, active.$1, reset: true));
     }
+  }
+
+  /// ספר חיצוני שבתצוגה המקדימה ושהסינון הסתיר מסומן ב-
+  /// [SearchingTab.filteredOutPreview]; ספר שהמדור אינו מכיר נשאר מוצג.
+  void _syncFilteredOutPreview() {
+    final target = widget.tab.previewTarget.value;
+    if (target == null || target.openInReader == null) return;
+    Object? id;
+    for (final entry in _previewPaths.entries) {
+      if (entry.value == target.filePath) id = entry.key;
+    }
+    if (id == null) return;
+    final visible = _visibleIds;
+    widget.tab.filteredOutPreview.value =
+        visible == null || visible.contains(id) ? null : target;
   }
 
   /// הסינון פעיל רק כשנבחרו קטגוריות ויש סיווג מוכן.
@@ -483,7 +502,8 @@ class _ExternalSearchResultsSectionState
     if (signature != _fetchSignature) return;
 
     final validPaths = <String>{
-      for (final category in library.getAllCategories()) category.path,
+      for (final category in library.getAllCategories())
+        FacetHelper.categoryFacet(category),
     };
 
     final categories = <int, String?>{};
@@ -605,6 +625,7 @@ class _ExternalSearchResultsSectionState
           _openResult(result, widget.tab.searchBloc.state),
         ),
       );
+      _syncFilteredOutPreview();
     } finally {
       if (mounted) setState(() => _openingId = null);
     }
