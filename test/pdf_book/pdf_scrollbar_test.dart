@@ -42,6 +42,21 @@ class _InteractiveController extends PdfViewerController {
   final List<Duration> goToDurations = [];
   final List<Offset> calcMatrixPositions = [];
 
+  final _scrollListeners = <VoidCallback>[];
+
+  @override
+  void addListener(VoidCallback listener) => _scrollListeners.add(listener);
+
+  @override
+  void removeListener(VoidCallback listener) =>
+      _scrollListeners.remove(listener);
+
+  void notifyScroll() {
+    for (final listener in List.of(_scrollListeners)) {
+      listener();
+    }
+  }
+
   @override
   bool get isReady => true;
 
@@ -765,5 +780,62 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+  });
+
+  group('PdfScrollbar - הסתרה אוטומטית (#4485)', () {
+    double thumbOpacity(WidgetTester tester) => tester
+        .widget<AnimatedOpacity>(
+          find.descendant(
+            of: find.byType(PdfScrollbar),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        )
+        .opacity;
+
+    testWidgets('המחוון נעלם אחרי שתי שניות ללא פעילות', (tester) async {
+      await tester.pumpWidget(
+        _buildVerticalScrollbarHarness(_InteractiveController()),
+      );
+      expect(thumbOpacity(tester), 1);
+
+      await tester.pump(const Duration(seconds: 3));
+
+      expect(thumbOpacity(tester), 0);
+    });
+
+    testWidgets('גלילה מחזירה את המחוון ומתחילה ספירה מחדש', (tester) async {
+      final controller = _InteractiveController();
+      await tester.pumpWidget(_buildVerticalScrollbarHarness(controller));
+      await tester.pump(const Duration(seconds: 3));
+      expect(thumbOpacity(tester), 0);
+
+      controller.notifyScroll();
+      await tester.pump();
+      expect(thumbOpacity(tester), 1);
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(thumbOpacity(tester), 1);
+      await tester.pump(const Duration(seconds: 2));
+      expect(thumbOpacity(tester), 0);
+    });
+
+    testWidgets('ריחוף על המסילה מחזיק את המחוון גלוי עד היציאה', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildVerticalScrollbarHarness(_InteractiveController()),
+      );
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+
+      await mouse.moveTo(tester.getCenter(find.byKey(_verticalHostKey)));
+      await tester.pump(const Duration(seconds: 5));
+      expect(thumbOpacity(tester), 1);
+
+      await mouse.moveTo(Offset.zero);
+      await tester.pump(const Duration(seconds: 3));
+      expect(thumbOpacity(tester), 0);
+    });
   });
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:otzaria/theme/app_tokens.dart';
 
@@ -66,10 +67,43 @@ class _PdfScrollbarState extends State<PdfScrollbar> {
   int? _labelPage;
   String? _labelText;
 
+  static const Duration _idleHideDelay = Duration(seconds: 2);
+  Timer? _idleHideTimer;
+  bool _isThumbVisible = true;
+  bool _isHovering = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_revealThumb);
+    _revealThumb();
+  }
+
+  @override
+  void didUpdateWidget(PdfScrollbar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_revealThumb);
+      widget.controller.addListener(_revealThumb);
+    }
+  }
+
   @override
   void dispose() {
+    _idleHideTimer?.cancel();
+    widget.controller.removeListener(_revealThumb);
     _labelController.dispose();
     super.dispose();
+  }
+
+  /// המחוון מסתיר את שולי העמוד בספרי צילום, ולכן הוא נעלם כשאין פעילות.
+  void _revealThumb() {
+    if (!_isThumbVisible && mounted) setState(() => _isThumbVisible = true);
+    _idleHideTimer?.cancel();
+    _idleHideTimer = Timer(_idleHideDelay, () {
+      if (!mounted || _isHovering || _isDraggingThumb) return;
+      setState(() => _isThumbVisible = false);
+    });
   }
 
   bool get _labelEnabled =>
@@ -387,9 +421,14 @@ class _PdfScrollbarState extends State<PdfScrollbar> {
                   if (_activeDragThumbTop != null) {
                     setState(() => _activeDragThumbTop = null);
                   }
+                  _revealThumb();
                 }
 
                 return MouseRegion(
+                  onEnter: (_) {
+                    _isHovering = true;
+                    _revealThumb();
+                  },
                   // ריחוף סתמי על המסילה — תצוגה מקדימה של עמוד היעד.
                   onHover: _labelEnabled
                       ? (event) {
@@ -402,6 +441,8 @@ class _PdfScrollbarState extends State<PdfScrollbar> {
                         }
                       : null,
                   onExit: (_) {
+                    _isHovering = false;
+                    _revealThumb();
                     // בזמן גרירה העכבר עלול לצאת מרוחב המסילה — אסור להסתיר אז.
                     if (_isDraggingThumb) return;
                     _hideLabel();
@@ -436,17 +477,21 @@ class _PdfScrollbarState extends State<PdfScrollbar> {
                             onVerticalDragUpdate: updateThumbDrag,
                             onVerticalDragEnd: (_) => endThumbDrag(),
                             onVerticalDragCancel: endThumbDrag,
-                            child: Container(
-                              width: widget.trackThickness,
-                              height: thumbHeight,
-                              decoration: BoxDecoration(
-                                color: resolvedThumbColor,
-                                borderRadius: AppTokens.borderRadiusAll,
-                              ),
-                              child: Center(
-                                child: _buildPageNumberText(
-                                  displayedPageNumber,
-                                  colorScheme,
+                            child: AnimatedOpacity(
+                              opacity: _isThumbVisible || isDragging ? 1 : 0,
+                              duration: const Duration(milliseconds: 200),
+                              child: Container(
+                                width: widget.trackThickness,
+                                height: thumbHeight,
+                                decoration: BoxDecoration(
+                                  color: resolvedThumbColor,
+                                  borderRadius: AppTokens.borderRadiusAll,
+                                ),
+                                child: Center(
+                                  child: _buildPageNumberText(
+                                    displayedPageNumber,
+                                    colorScheme,
+                                  ),
                                 ),
                               ),
                             ),
