@@ -263,10 +263,18 @@ class ContextMenuRegionState extends State<ContextMenuRegion> {
             .clamp(_contextMenuScreenPadding, double.infinity)
             .toDouble();
 
-    // RTL: right-align menu with anchor X; fall back to left-align if no space
+    // Anchor toward the opener's reading direction, flipping only when
+    // there is insufficient room. RTL grows left; LTR grows right.
     final anchorX = _menuAnchorX ?? currentOffset.dx;
-    final rtlDx = anchorX - panelSize.width;
-    final targetDx = rtlDx >= _contextMenuScreenPadding ? rtlDx : anchorX;
+    final leftDx = anchorX - panelSize.width;
+    final rightDx = anchorX;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final targetDx = isRtl
+        ? (leftDx >= _contextMenuScreenPadding ? leftDx : rightDx)
+        : (rightDx + panelSize.width <=
+                  overlaySize.width - _contextMenuScreenPadding
+              ? rightDx
+              : leftDx);
 
     final adjustedOffset = Offset(
       targetDx.clamp(_contextMenuScreenPadding, maxDx).toDouble(),
@@ -371,23 +379,39 @@ class ContextMenuRegionState extends State<ContextMenuRegion> {
                       maintainSize: false,
                       maintainAnimation: false,
                       maintainState: true,
-                      child: _AppContextMenuPanel(
-                        presentation: presentation,
-                        key: _menuPanelKey,
-                        entries: orderedEntries,
-                        metrics: metrics,
-                        menuStyle: menuStyle,
-                        maxWidth: maxMenuWidth,
-                        maxHeight: maxMenuHeight,
-                        buildChildren: (panelContext, panelEntries) =>
-                            _buildMenuPanelChildren(
-                              panelContext,
-                              panelEntries,
-                              metrics,
-                              maxMenuWidth,
-                              submenuControllers,
-                              iconRowControllers,
-                            ),
+                      // MenuAnchor מאזין לגלילה האופקית בשורת האייקונים בלבד;
+                      // גלילת הפאנל צריכה לסגור גם היא את תתי־התפריטים שלה.
+                      child: NotificationListener<ScrollStartNotification>(
+                        onNotification: (notification) {
+                          if (notification.depth == 0 &&
+                              notification.metrics.axis == Axis.vertical) {
+                            for (final controller
+                                in iconRowControllers.values.expand(
+                                  (row) => row,
+                                )) {
+                              if (controller.isOpen) controller.close();
+                            }
+                          }
+                          return false;
+                        },
+                        child: _AppContextMenuPanel(
+                          presentation: presentation,
+                          key: _menuPanelKey,
+                          entries: orderedEntries,
+                          metrics: metrics,
+                          menuStyle: menuStyle,
+                          maxWidth: maxMenuWidth,
+                          maxHeight: maxMenuHeight,
+                          buildChildren: (panelContext, panelEntries) =>
+                              _buildMenuPanelChildren(
+                                panelContext,
+                                panelEntries,
+                                metrics,
+                                maxMenuWidth,
+                                submenuControllers,
+                                iconRowControllers,
+                              ),
+                        ),
                       ),
                     ),
                   ),

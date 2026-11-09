@@ -4,14 +4,20 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:otzaria/core/app_paths.dart';
+import 'package:otzaria/core/user_state/user_state_database.dart';
+import 'package:otzaria/core/user_state/user_state_list_store.dart';
+import 'package:otzaria/core/user_state/window_session_store.dart';
 import 'package:otzaria/data/data_providers/hive_data_provider.dart';
+import 'package:otzaria/plugins/models/plugin_manifest.dart';
 import 'package:otzaria/plugins/models/plugin_valid_permissions.dart';
 import 'package:otzaria/plugins/repository/plugin_registry_repository.dart';
 import 'package:otzaria/plugins/storage/plugin_system_database.dart';
 import 'package:otzaria/plugins/view/plugin_sdk_scripts.dart';
 import 'package:otzaria/settings/engine/app_settings_store.dart';
 import 'package:otzaria/settings/engine/settings_repository.dart';
+import 'package:otzaria/tabs/models/tool_tab.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqlite3/sqlite3.dart';
 
 import '../../../integration_test/support/android_startup_fixture.dart';
 import '../../../integration_test/support/android_startup_protocol.dart';
@@ -37,6 +43,116 @@ void main() {
         Directory(p.join(temp.path, name)),
         enabledPlugin: enabled,
       );
+
+  List<String> userStatePaths(AndroidStartupFixture fixture) => [
+    p.join(fixture.library.root.path, 'databases', 'user_state.db'),
+    p.join(fixture.library.appDataPath, 'databases', 'user_state.db'),
+  ];
+
+  Future<void> withUserState(
+    String path,
+    Future<void> Function(UserStateDatabase database) body,
+  ) async {
+    await File(path).parent.create(recursive: true);
+    final database = UserStateDatabase.openAt(path);
+    try {
+      await body(database);
+    } finally {
+      await database.flushWrites();
+      database.close();
+    }
+  }
+
+  test('first measured open does not create a user state database', () async {
+    final prepared = fixture('first-launch');
+    await prepared.prepare();
+    for (final path in userStatePaths(prepared)) {
+      expect(await File(path).exists(), isFalse);
+    }
+    expect(await prepared.openForMeasurement(fixtureState: 'prepared'), 0);
+    for (final path in userStatePaths(prepared)) {
+      expect(await File(path).exists(), isFalse);
+    }
+  });
+
+  test(
+    'reused fixture clears restorable windows but preserves other user data',
+    () async {
+      final prepared = fixture('reused-sessions');
+      await prepared.prepare();
+      final identity = prepared.identity;
+      expect(await prepared.openForMeasurement(fixtureState: 'prepared'), 0);
+      final tab = ToolTab(
+        toolId: androidStartupProbePlugin,
+        title: 'Restored fixture tool',
+      );
+      final tabsJson = jsonEncode([tab.toJson()]);
+      tab.dispose();
+      const history = [
+        {'bookId': 42, 'line': 17},
+      ];
+      for (final path in userStatePaths(prepared)) {
+        await withUserState(path, (database) async {
+          final sessions = WindowSessionStore(database: database);
+          for (final slot in [1, 8]) {
+            await sessions.save(slot, tabsJson: tabsJson, currentIndex: 0);
+          }
+          await sessions.save(0, tabsJson: '[]', currentIndex: 7);
+          final lists = UserStateListStore(database: database);
+          try {
+            await lists.write('history', 'books', history);
+          } finally {
+            lists.dispose();
+          }
+          expect((await sessions.loadAll()).map((s) => s.slot), [1, 8]);
+        });
+      }
+      final cache = File(
+        p.join(prepared.library.appDataPath, 'keep-cache.bin'),
+      );
+      await cache.writeAsBytes([2, 4, 8]);
+
+      expect(await prepared.openForMeasurement(fixtureState: 'reused'), 1);
+      expect(prepared.identity, identity);
+      expect(await cache.readAsBytes(), [2, 4, 8]);
+      expect(
+        await File(
+          p.join(prepared.root.path, 'launch-count.json'),
+        ).readAsString(),
+        '2',
+      );
+      for (final path in userStatePaths(prepared)) {
+        await withUserState(path, (database) async {
+          final sessions = WindowSessionStore(database: database);
+          expect(await sessions.loadAll(), isEmpty, reason: path);
+          final sentinel = await sessions.load(0);
+          expect(sentinel!.tabsJson, '[]');
+          expect(sentinel.currentIndex, 7);
+          final lists = UserStateListStore(database: database);
+          try {
+            expect(await lists.read('history', 'books'), history);
+          } finally {
+            lists.dispose();
+          }
+        });
+      }
+      await Settings.init(cacheProvider: HiveCache());
+      final repository = PluginRegistryRepository();
+      final plugin = (await repository.getAllPlugins()).single;
+      expect(plugin.pluginId, androidStartupProbePlugin);
+      expect(plugin.enabled, isTrue);
+      expect(plugin.installPath, prepared.pluginPath);
+      for (final permission in [
+        pluginStartupContributionsPermission,
+        pluginRunOnStartupPermission,
+      ]) {
+        expect(
+          await repository.getPermission(plugin.pluginId, permission),
+          isTrue,
+        );
+      }
+    },
+  );
 
   test(
     'real registry is seeded before app startup and reopened without reseeding',
@@ -88,6 +204,128 @@ void main() {
       expect(await prepared.openForMeasurement(fixtureState: 'reused'), 1);
     },
   );
+
+  test(
+    'reused startup resets saved tabs while preserving fixture data',
+    () async {
+      final prepared = fixture('saved-session');
+      await prepared.prepare();
+      final identity = prepared.identity;
+      final settingsBefore = Settings.isInitialized;
+      expect(await prepared.openForMeasurement(fixtureState: 'prepared'), 0);
+      final state = UserStateDatabase.openAt(
+        p.join(prepared.library.root.path, 'databases', 'user_state.db'),
+      );
+      addTearDown(state.close);
+      final sessions = WindowSessionStore(database: state);
+      final savedTab = jsonEncode([
+        {
+          'type': 'ToolTab',
+          'toolId': androidStartupProbePlugin,
+          'title': 'Previous measured open',
+          'instanceId': 'previous-measured-document',
+          'isPinned': false,
+          'allowMultipleInstances': false,
+        },
+      ]);
+      await sessions.save(1, tabsJson: savedTab, currentIndex: 0);
+      await sessions.save(2, tabsJson: savedTab, currentIndex: 0);
+      expect((await sessions.load(1))!.tabsJson, savedTab);
+      expect((await sessions.loadAll()).length, 2);
+      final database = await state.database;
+      database.execute(
+        'INSERT INTO lists (box, key, payload_json, updated_at) VALUES (?, ?, ?, ?)',
+        ['fixture-sentinel', 'preserved', '{"value":17}', 123],
+      );
+      state.close();
+      final cache = File(p.join(prepared.library.appDataPath, 'cache', 'keep'));
+      await cache.parent.create(recursive: true);
+      await cache.writeAsString('retained fixture cache', flush: true);
+
+      expect(await prepared.openForMeasurement(fixtureState: 'reused'), 1);
+      expect(Settings.isInitialized, settingsBefore);
+      expect(UserStateDatabase.instance.openDatabase, isNull);
+      final reopened = await state.database;
+      expect(await sessions.load(1), isNull);
+      expect(await sessions.loadAll(), isEmpty);
+      expect(
+        reopened.select('SELECT * FROM lists').map((row) => Map.of(row)),
+        [
+          {
+            'box': 'fixture-sentinel',
+            'key': 'preserved',
+            'payload_json': '{"value":17}',
+            'updated_at': 123,
+          },
+        ],
+      );
+      expect(await cache.readAsString(), 'retained fixture cache');
+      expect(prepared.identity, identity);
+      expect(
+        jsonDecode(
+          await File(
+            p.join(prepared.root.path, 'launch-count.json'),
+          ).readAsString(),
+        ),
+        2,
+      );
+      await Settings.init(cacheProvider: HiveCache());
+      final repository = PluginRegistryRepository();
+      final plugin = (await repository.getAllPlugins()).single;
+      expect(plugin.pluginId, androidStartupProbePlugin);
+      expect(plugin.enabled, isTrue);
+      expect(plugin.installPath, prepared.pluginPath);
+      expect(
+        plugin.manifest.toJson(),
+        PluginManifest.fromJson(prepared.manifestJson).toJson(),
+      );
+      for (final permission in [
+        pluginStartupContributionsPermission,
+        pluginRunOnStartupPermission,
+      ]) {
+        expect(
+          await repository.getPermission(plugin.pluginId, permission),
+          isTrue,
+        );
+      }
+    },
+  );
+
+  test('startup does not create a missing user-state database', () async {
+    final prepared = fixture('missing-session');
+    await prepared.prepare();
+    final state = File(
+      p.join(prepared.library.root.path, 'databases', 'user_state.db'),
+    );
+    expect(await state.exists(), isFalse);
+    expect(await prepared.openForMeasurement(fixtureState: 'prepared'), 0);
+    expect(await state.exists(), isFalse);
+    expect(await prepared.openForMeasurement(fixtureState: 'reused'), 1);
+    expect(await state.exists(), isFalse);
+  });
+
+  test('invalid saved state fails without advancing fixture history', () async {
+    final prepared = fixture('invalid-session');
+    await prepared.prepare();
+    expect(await prepared.openForMeasurement(fixtureState: 'prepared'), 0);
+    final state = File(
+      p.join(prepared.library.root.path, 'databases', 'user_state.db'),
+    );
+    await state.writeAsString('invalid saved state', flush: true);
+    await expectLater(
+      prepared.openForMeasurement(fixtureState: 'reused'),
+      throwsA(isA<SqliteException>()),
+    );
+    expect(await state.readAsString(), 'invalid saved state');
+    expect(
+      jsonDecode(
+        await File(
+          p.join(prepared.root.path, 'launch-count.json'),
+        ).readAsString(),
+      ),
+      1,
+    );
+  });
 
   test(
     'no-enabled control has an empty actual registry and no permissions to wake',
@@ -143,6 +381,12 @@ void main() {
     () async {
       final changed = fixture('changed');
       await changed.prepare();
+      final statePath = userStatePaths(changed).first;
+      await withUserState(statePath, (database) async {
+        await WindowSessionStore(
+          database: database,
+        ).save(1, tabsJson: '[]', currentIndex: 0);
+      });
       final html = File(p.join(changed.pluginPath, 'index.html'));
       await html.writeAsString('changed');
       await expectLater(
@@ -161,6 +405,51 @@ void main() {
       await expectLater(
         changed.openForMeasurement(fixtureState: 'prepared'),
         throwsStateError,
+      );
+      await withUserState(statePath, (database) async {
+        expect(
+          (await WindowSessionStore(database: database).loadAll()).map(
+            (session) => session.slot,
+          ),
+          [1],
+        );
+      });
+      expect(
+        await File(
+          p.join(changed.root.path, 'launch-count.json'),
+        ).readAsString(),
+        '0',
+      );
+    },
+  );
+
+  test(
+    'old startup fixture version is rejected before session reset',
+    () async {
+      final prepared = fixture('old-version');
+      await prepared.prepare();
+      final statePath = userStatePaths(prepared).first;
+      await withUserState(statePath, (database) async {
+        await WindowSessionStore(
+          database: database,
+        ).save(1, tabsJson: '[]', currentIndex: 0);
+      });
+      final marker = File(p.join(prepared.root.path, 'startup-fixture.json'));
+      final data = jsonDecode(await marker.readAsString()) as Map;
+      data['version'] = 'android-startup-v1';
+      await marker.writeAsString(jsonEncode(data));
+      await expectLater(
+        prepared.openForMeasurement(fixtureState: 'prepared'),
+        throwsStateError,
+      );
+      await withUserState(statePath, (database) async {
+        expect(await WindowSessionStore(database: database).load(1), isNotNull);
+      });
+      expect(
+        await File(
+          p.join(prepared.root.path, 'launch-count.json'),
+        ).readAsString(),
+        '0',
       );
     },
   );

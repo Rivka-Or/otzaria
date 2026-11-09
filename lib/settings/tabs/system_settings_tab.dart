@@ -1,4 +1,5 @@
 import 'package:otzaria/search_feedback/semantic_search_strings.dart';
+import 'package:otzaria/android_update/view/android_update_view.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -11,7 +12,7 @@ import 'package:otzaria_icons/otzaria_icons.dart';
 import 'package:otzaria/settings/engine/app_settings_store.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:otzaria/core/app_paths.dart';
@@ -801,6 +802,7 @@ class _SystemSettingsTabState extends State<SystemSettingsTab> {
             ),
           ],
         ),
+        if (Platform.isAndroid) const AndroidUpdateSettingsTile(),
         SettingsActionTile.text(
           icon: OtzariaIcons.library_info_24_regular,
           title: context.settingsText(

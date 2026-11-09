@@ -527,8 +527,8 @@ packages:
     dependency: "direct main"
     description:
       path: flutter_inappwebview
-      ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
-      resolved-ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
+      ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
+      resolved-ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
       url: "https://github.com/Otzaria/flutter_inappwebview"
     source: git
     version: "6.2.0-beta.3"
@@ -536,8 +536,8 @@ packages:
     dependency: "direct overridden"
     description:
       path: flutter_inappwebview_android
-      ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
-      resolved-ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
+      ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
+      resolved-ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
       url: "https://github.com/Otzaria/flutter_inappwebview"
     source: git
     version: "1.2.0-beta.3"
@@ -553,8 +553,8 @@ packages:
     dependency: "direct overridden"
     description:
       path: flutter_inappwebview_ios
-      ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
-      resolved-ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
+      ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
+      resolved-ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
       url: "https://github.com/Otzaria/flutter_inappwebview"
     source: git
     version: "1.2.0-beta.3"
@@ -562,8 +562,8 @@ packages:
     dependency: "direct main"
     description:
       path: flutter_inappwebview_linux
-      ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
-      resolved-ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
+      ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
+      resolved-ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
       url: "https://github.com/Otzaria/flutter_inappwebview"
     source: git
     version: "0.1.0-beta.1"
@@ -571,8 +571,8 @@ packages:
     dependency: "direct overridden"
     description:
       path: flutter_inappwebview_macos
-      ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
-      resolved-ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
+      ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
+      resolved-ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
       url: "https://github.com/Otzaria/flutter_inappwebview"
     source: git
     version: "1.2.0-beta.3"
@@ -580,8 +580,8 @@ packages:
     dependency: "direct overridden"
     description:
       path: flutter_inappwebview_platform_interface
-      ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
-      resolved-ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
+      ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
+      resolved-ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
       url: "https://github.com/Otzaria/flutter_inappwebview"
     source: git
     version: "1.4.0-beta.3"
@@ -589,8 +589,8 @@ packages:
     dependency: transitive
     description:
       path: flutter_inappwebview_web
-      ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
-      resolved-ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
+      ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
+      resolved-ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
       url: "https://github.com/Otzaria/flutter_inappwebview"
     source: git
     version: "1.2.0-beta.3"
@@ -598,8 +598,8 @@ packages:
     dependency: "direct main"
     description:
       path: flutter_inappwebview_windows
-      ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
-      resolved-ref: "ce3a8ba720081d9f0ad1f5dcf77e80a354b97cd8"
+      ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
+      resolved-ref: ab6953a7d69016bcfcd6d47c301ded0d2a6d5400
       url: "https://github.com/Otzaria/flutter_inappwebview"
     source: git
     version: "0.7.0-beta.3"
@@ -687,8 +687,8 @@ packages:
     dependency: "direct overridden"
     description:
       path: flutter_local_notifications_windows
-      ref: ad21cf2cddfa7c79ea7903ad95b38a8d716b5f85
-      resolved-ref: ad21cf2cddfa7c79ea7903ad95b38a8d716b5f85
+      ref: faf17437daccb8c74a4d17e6881dc834415de6d8
+      resolved-ref: faf17437daccb8c74a4d17e6881dc834415de6d8
       url: "https://github.com/Otzaria/flutter_local_notifications"
     source: git
     version: "3.1.1"
@@ -697,14 +697,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_markdown:
+  flutter_markdown_plus:
     dependency: "direct main"
     description:
-      name: flutter_markdown
-      sha256: "08fb8315236099ff8e90cb87bb2b935e0a724a3af1623000a9cec930468e0f27"
+      name: flutter_markdown_plus
+      sha256: fce641d6c2106cc495de1cd603f97a4f9d615a97a64011928ded380dbdade935
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.7+1"
+    version: "1.0.12"
   flutter_quill:
     dependency: "direct main"
     description:
@@ -1161,12 +1161,11 @@ packages:
   opentype_shaper:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "461902c049b412d64dc4dfa7b547fedbf751211d"
-      resolved-ref: "461902c049b412d64dc4dfa7b547fedbf751211d"
-      url: "https://github.com/Otzaria/opentype_shaper"
-    source: git
-    version: "0.3.2"
+      name: opentype_shaper
+      sha256: b28299cd1c2b6019d8c44dc83aba24fc27937c230c3bc53587210e83487fd5c7
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.4"
   otzaria_ashurit:
     dependency: "direct main"
     description:
@@ -1203,8 +1202,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "b78d36eaffcb2a5fa679d34a52133512ee55c084"
-      resolved-ref: "b78d36eaffcb2a5fa679d34a52133512ee55c084"
+      ref: d303a03d00986c5c64243cfc6a7d84015fba5dac
+      resolved-ref: d303a03d00986c5c64243cfc6a7d84015fba5dac
       url: "https://github.com/Otzaria/otzaria_search_engine"
     source: git
     version: "7.0.1"
@@ -1315,10 +1314,11 @@ packages:
   pdfium_dart:
     dependency: "direct main"
     description:
-      name: pdfium_dart
-      sha256: "3e250021b2f462058aae216837902fdc8b2cb7f0657e4ec2bc9ac541f960ff84"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/pdfium_dart"
+      ref: d898e52b1526532c8d66a5f7fee0ca6b867a77d0
+      resolved-ref: d898e52b1526532c8d66a5f7fee0ca6b867a77d0
+      url: "https://github.com/Otzaria/pdfrx"
+    source: git
     version: "0.4.1"
   pdfium_flutter:
     dependency: transitive
@@ -1332,19 +1332,20 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/pdfrx"
-      ref: 942e27bec86e8d480111517c2083eb52817ee032
-      resolved-ref: 942e27bec86e8d480111517c2083eb52817ee032
+      ref: d898e52b1526532c8d66a5f7fee0ca6b867a77d0
+      resolved-ref: d898e52b1526532c8d66a5f7fee0ca6b867a77d0
       url: "https://github.com/Otzaria/pdfrx"
     source: git
-    version: "2.11.0"
+    version: "2.12.0"
   pdfrx_engine:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: pdfrx_engine
-      sha256: "08d0d0843807b632f23836d6f021d1ff391b1988e124894067045242f03d7f96"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.9.0"
+      path: "packages/pdfrx_engine"
+      ref: d898e52b1526532c8d66a5f7fee0ca6b867a77d0
+      resolved-ref: d898e52b1526532c8d66a5f7fee0ca6b867a77d0
+      url: "https://github.com/Otzaria/pdfrx"
+    source: git
+    version: "0.9.1"
   petitparser:
     dependency: transitive
     description:
@@ -1397,10 +1398,10 @@ packages:
     dependency: "direct main"
     description:
       name: positioned_sliver_list
-      sha256: f5584e73c7773007b21fb2c01b5a6acf9f71f71b43b220dd3e1f0799a2d01cf2
+      sha256: "5d3e07d0772bb81ef6e309b3124dd44650bd193cc97bc4a63d3401b62c6231d5"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.4"
+    version: "0.2.5"
   posix:
     dependency: "direct main"
     description:
@@ -1413,8 +1414,8 @@ packages:
     dependency: "direct main"
     description:
       path: printing
-      ref: "3cb90fb3025553f3e9f48638c79ccf93efb326af"
-      resolved-ref: "3cb90fb3025553f3e9f48638c79ccf93efb326af"
+      ref: f7f992b49370307143a4f82f59341bb1e6189792
+      resolved-ref: f7f992b49370307143a4f82f59341bb1e6189792
       url: "https://github.com/Otzaria/dart_pdf"
     source: git
     version: "5.15.1"
@@ -1598,8 +1599,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: 6bfd33c3bc14392c1a6bb0887fdb23209068eab5
-      resolved-ref: 6bfd33c3bc14392c1a6bb0887fdb23209068eab5
+      ref: "6bfd33c3bc14392c1a6bb0887fdb23209068eab5"
+      resolved-ref: "6bfd33c3bc14392c1a6bb0887fdb23209068eab5"
       url: "https://github.com/Otzaria/otzaria_library_updater"
     source: git
     version: "0.9.0"
@@ -2076,8 +2077,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/window_manager"
-      ref: "4f37655288ce8b803a9bd50294c5d6983850f622"
-      resolved-ref: "4f37655288ce8b803a9bd50294c5d6983850f622"
+      ref: "88a433a7be43ed0213da12b561bf0d8d070c6d68"
+      resolved-ref: "88a433a7be43ed0213da12b561bf0d8d070c6d68"
       url: "https://github.com/Otzaria/window_manager"
     source: git
     version: "0.5.2"

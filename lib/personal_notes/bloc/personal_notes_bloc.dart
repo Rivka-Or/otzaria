@@ -251,10 +251,18 @@ class PersonalNotesBloc extends Bloc<PersonalNotesEvent, PersonalNotesState> {
     StartCreatingPersonalNote event,
     Emitter<PersonalNotesState> emit,
   ) {
+    final isSameSession =
+        state.isCreatingNewNote &&
+        state.newNoteBookId == event.bookId &&
+        state.newNoteLineNumber == event.lineNumber &&
+        state.newNotePdfAnchor == event.pdfAnchor;
     emit(
       state.copyWith(
         isCreatingNewNote: true,
         newNoteRequestToken: state.newNoteRequestToken + 1,
+        newNoteSessionToken: isSameSession
+            ? state.newNoteSessionToken
+            : state.newNoteSessionToken + 1,
         clearExpandRequest: true,
         clearNewNoteSourceSelection: true,
         clearNewNotePdfAnchor: true,
@@ -277,6 +285,14 @@ class PersonalNotesBloc extends Bloc<PersonalNotesEvent, PersonalNotesState> {
     CancelCreatingPersonalNote event,
     Emitter<PersonalNotesState> emit,
   ) {
+    // השלמת כתיבה ישנה אינה מבטלת יצירה חדשה שכבר ממתינה בתור האירועים.
+    if ((event.sessionToken != null &&
+            event.sessionToken != state.newNoteSessionToken) ||
+        (event.bookId != null && event.bookId != state.newNoteBookId) ||
+        (event.lineNumber != null &&
+            event.lineNumber != state.newNoteLineNumber)) {
+      return;
+    }
     emit(state.copyWith(clearNewNoteData: true));
   }
 
@@ -347,10 +363,10 @@ class PersonalNotesBloc extends Bloc<PersonalNotesEvent, PersonalNotesState> {
     Emitter<PersonalNotesState> emit, {
     bool clearCreatingState = false,
   }) {
-    final split = _splitNotes(notes);
+    final partition = partitionAndSortPersonalNotes(notes);
     final filtered = filterPersonalNotes(
-      locatedNotes: split.locatedNotes,
-      missingNotes: split.missingNotes,
+      locatedNotes: partition.located,
+      missingNotes: partition.missing,
       searchQuery: state.searchQuery,
       showOnlyVisible: state.showOnlyVisible,
       visibleLineIndices: state.visibleLineIndices,
@@ -359,28 +375,14 @@ class PersonalNotesBloc extends Bloc<PersonalNotesEvent, PersonalNotesState> {
       state.copyWith(
         isLoading: false,
         bookId: bookId,
-        locatedNotes: split.locatedNotes,
-        missingNotes: split.missingNotes,
+        locatedNotes: partition.located,
+        missingNotes: partition.missing,
         filteredLocatedNotes: filtered.locatedNotes,
         filteredMissingNotes: filtered.missingNotes,
         errorMessage: null,
         clearNewNoteData: clearCreatingState,
       ),
     );
-  }
-
-  _NotesPartition _splitNotes(List<PersonalNote> notes) {
-    final sorted = sortPersonalNotes(notes);
-    final located = <PersonalNote>[];
-    final missing = <PersonalNote>[];
-    for (final note in sorted) {
-      if (note.hasLocation) {
-        located.add(note);
-      } else {
-        missing.add(note);
-      }
-    }
-    return _NotesPartition(locatedNotes: located, missingNotes: missing);
   }
 }
 
@@ -391,11 +393,4 @@ class _StoredNotesChanged extends PersonalNotesEvent {
 
   @override
   List<Object?> get props => [bookId];
-}
-
-class _NotesPartition {
-  final List<PersonalNote> locatedNotes;
-  final List<PersonalNote> missingNotes;
-
-  _NotesPartition({required this.locatedNotes, required this.missingNotes});
 }
