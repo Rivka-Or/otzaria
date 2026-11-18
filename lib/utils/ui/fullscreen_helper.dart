@@ -14,6 +14,9 @@ class FullscreenHelper {
   /// מסך מלא זמין רק בעיון עם טאב פתוח — כולל טאבי כלים ותוספים.
   static bool isContextAllowed(Screen screen, bool hasOpenTabs) {
     if (screen == Screen.reading) return hasOpenTabs;
+    // טאבי חיפוש מוצגים במסך החיפוש; ניווט אליו (Ctrl+Shift+F, Ctrl+Tab)
+    // לא אמור להוציא ממסך מלא.
+    if (screen == Screen.search) return true;
     return false;
   }
 

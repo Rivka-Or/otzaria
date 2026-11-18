@@ -30,13 +30,21 @@ void main() {
       expect(FullscreenHelper.isContextAllowed(Screen.reading, false), isFalse);
     });
 
-    test('חוסם בספרייה/חיפוש/איתור/הגדרות', () {
-      for (final screen in [
-        Screen.library,
-        Screen.find,
-        Screen.search,
-        Screen.settings,
-      ]) {
+    test('מתיר במסך החיפוש', () {
+      expect(FullscreenHelper.isContextAllowed(Screen.search, true), isTrue);
+      expect(
+        FullscreenHelper.shouldExitFullscreenOnNavigation(
+          platform: TargetPlatform.windows,
+          isFullscreen: true,
+          screen: Screen.search,
+          hasOpenTabs: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('חוסם בספרייה/איתור/הגדרות', () {
+      for (final screen in [Screen.library, Screen.find, Screen.settings]) {
         expect(
           FullscreenHelper.isContextAllowed(screen, true),
           isFalse,
